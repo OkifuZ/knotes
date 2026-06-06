@@ -1,0 +1,18 @@
+{
+  "name": "doc-reader",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "doc-reader": "./server.js"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "marked": "^14.1.0",
+    "katex": "^0.16.11",
+    "mermaid": "^10.9.0",
+    "@highlightjs/cdn-assets": "^11.10.0"
+  }
+}
