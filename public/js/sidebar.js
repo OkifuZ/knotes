@@ -1,8 +1,10 @@
-async function loadSidebar() {
+async function loadSidebar(data) {
   const treeEl = document.getElementById('sidebar-tree');
   try {
-    const resp = await fetch('/api/structure');
-    const data = await resp.json();
+    if (!data) {
+      const resp = await fetch('/api/structure');
+      data = await resp.json();
+    }
     treeEl.innerHTML = renderRoots(data);
     bindSidebarEvents();
     highlightCurrentDoc();
@@ -73,7 +75,6 @@ function openAncestors(el) {
     if (parent.classList.contains('folder-children')) {
       var folder = parent.parentElement;
       folder.classList.add('open');
-      if (folder.classList.contains('root-group')) folder.classList.add('open');
     }
     parent = parent.parentElement;
   }

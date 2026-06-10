@@ -1,7 +1,6 @@
 function generateTOC() {
   const content = document.getElementById('content');
   const toc = document.getElementById('toc');
-  const tocPanel = document.getElementById('toc-panel');
   const headings = content.querySelectorAll('.content h1, .content h2, .content h3');
 
   if (headings.length === 0) {

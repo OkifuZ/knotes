@@ -1,5 +1,12 @@
 :root,
 [data-theme="light"] {
+  --z-overlay: 15;
+  --z-panel: 20;
+  --z-handle: 25;
+  --z-panel-float: 30;
+  --z-edge: 45;
+  --z-toolbar: 50;
+  --z-modal: 100;
   --bg: #f4f1ea;
   --bg-secondary: #ece6db;
   --bg-tertiary: #e4dcd0;
@@ -31,34 +38,34 @@
 }
 
 [data-theme="dark"] {
-  --bg: #1b1c21;
-  --bg-secondary: #16171b;
-  --bg-tertiary: #222328;
-  --text: #e8e3d8;
-  --text-secondary: #a09a8e;
-  --text-muted: #635f58;
-  --border: #2a2b30;
+  --bg: #1e1f24;
+  --bg-secondary: #18191d;
+  --bg-tertiary: #25262b;
+  --text: #ebe6dc;
+  --text-secondary: #a39d92;
+  --text-muted: #6a655c;
+  --border: #2e2f34;
   --link: #d4a853;
   --link-hover: #e6c06a;
-  --code-bg: #1e1f24;
-  --code-text: #e8e3d8;
-  --inline-code-bg: #25262b;
-  --blockquote-bg: #1e1f24;
+  --code-bg: #212227;
+  --code-text: #ebe6dc;
+  --inline-code-bg: #28292e;
+  --blockquote-bg: #212227;
   --blockquote-border: #d4a853;
-  --table-border: #2a2b30;
-  --table-stripe: #1d1e23;
-  --sidebar-bg: #16171b;
-  --sidebar-hover: #202127;
-  --sidebar-active: #2a2820;
+  --table-border: #2e2f34;
+  --table-stripe: #1f2025;
+  --sidebar-bg: #18191d;
+  --sidebar-hover: #24252a;
+  --sidebar-active: #2e2c24;
   --toc-active: #d4a853;
-  --scrollbar-thumb: #3a3b40;
+  --scrollbar-thumb: #3e3f44;
   --scrollbar-track: transparent;
   --accent: #d4a853;
   --handle-bg: transparent;
-  --handle-hover: #3a3b40;
+  --handle-hover: #3e3f44;
   --overlay-bg: rgba(0, 0, 0, 0.5);
-  --edge-bg: #1b1c21;
-  --edge-hover: #2a2b30;
+  --edge-bg: #1e1f24;
+  --edge-hover: #2e2f34;
 }
 
 *,
@@ -127,7 +134,7 @@ body {
   border-right: 1px solid var(--border);
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 20;
+  z-index: var(--z-panel);
   transition: background 0.2s, width 0.15s;
 }
 #sidebar.collapsed {
@@ -234,7 +241,7 @@ body {
   background: var(--handle-bg);
   transition: background 0.15s, width 0.15s;
   position: relative;
-  z-index: 25;
+  z-index: var(--z-handle);
 }
 #resize-handle:hover,
 #resize-handle.active {
@@ -246,29 +253,62 @@ body {
   background: var(--border);
 }
 
-#toc-resize-handle {
-  width: 5px;
-  cursor: col-resize;
-  background: var(--handle-bg);
-  transition: background 0.15s, width 0.15s;
+.toc-column {
   position: sticky;
   top: 0;
-  height: 100vh;
-  z-index: 10;
-}
-#toc-resize-handle:hover,
-#toc-resize-handle.active {
-  background: var(--handle-hover);
+  max-height: 100vh;
+  display: flex;
+  align-items: stretch;
 }
 
-#toc-resize-handle:has(+ #toc-panel.collapsed) {
-  width: 8px;
+#toc-resize-handle {
+  width: 12px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: width 0.15s;
+  position: relative;
+  z-index: 10;
+}
+
+#toc-resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 24px;
+  bottom: 24px;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
   background: var(--border);
+  opacity: 0.65;
+  transition: width 0.15s, background 0.15s, opacity 0.15s;
+}
+
+#toc-resize-handle:hover::before,
+#toc-resize-handle.active::before {
+  width: 2px;
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+.toc-column:has(#toc-panel.collapsed) #toc-resize-handle {
+  width: 12px;
+}
+
+.toc-column:has(#toc-panel.collapsed) #toc-resize-handle::before {
+  width: 2px;
+  background: var(--border);
+  opacity: 0.9;
 }
 
 #sidebar.collapsed {
   overflow: hidden;
   border-right: none;
+}
+
+#app.dragging #sidebar,
+#app.dragging #toc-panel {
+  transition: none;
 }
 
 #toc-panel.collapsed {
@@ -277,14 +317,13 @@ body {
   border-left: none !important;
 }
 
-/* ---- main area (grid: content | handle | TOC) ---- */
+/* ---- main area (grid: content | toc-column) ---- */
 #main {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  grid-template-rows: auto;
+  grid-template-columns: 1fr auto;
   align-items: start;
 }
 
@@ -309,14 +348,9 @@ body {
   width: var(--toc-w, 200px);
   min-width: 0;
   max-width: 400px;
-  position: sticky;
-  top: 0;
-  max-height: 100vh;
   overflow-y: auto;
   padding: 24px 16px 24px 0;
-  border-left: 1px solid var(--border);
   font-size: 12.5px;
-  z-index: 5;
   transition: width 0.15s;
 }
 
@@ -364,8 +398,8 @@ body {
 #toolbar {
   position: fixed;
   top: 12px;
-  right: 12px;
-  z-index: 50;
+  right: 20px;
+  z-index: var(--z-toolbar);
   display: flex;
   align-items: center;
   background: var(--bg-secondary);
@@ -462,7 +496,7 @@ body {
 .edge-toggle {
   display: none;
   position: fixed;
-  z-index: 45;
+  z-index: var(--z-edge);
   background: var(--edge-bg);
   border: 1px solid var(--border);
   cursor: pointer;
@@ -506,7 +540,7 @@ body {
   position: fixed;
   inset: 0;
   background: var(--overlay-bg);
-  z-index: 15;
+  z-index: var(--z-overlay);
 }
 #overlay.show {
   display: block;
@@ -652,7 +686,7 @@ body {
 .mermaid-modal {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -739,7 +773,12 @@ body {
   max-width: none;
 }
 
-.content .mermaid-error {
+/* ---- mermaid ---- */
+.mermaid-container svg {
+  max-width: 100%;
+}
+
+.mermaid-error {
   color: #e06c75;
   padding: 10px 14px;
   background: var(--code-bg);
@@ -792,7 +831,7 @@ body {
     padding: 48px 40px 96px;
   }
   #toc-panel {
-    width: 180px;
+    width: var(--toc-w, 180px);
     padding: 48px 12px 24px 0;
   }
 }
@@ -807,7 +846,7 @@ body {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     box-shadow: none;
-    z-index: 30;
+    z-index: var(--z-panel-float);
   }
   #sidebar.open {
     transform: translateX(0);
@@ -815,6 +854,11 @@ body {
   }
   #resize-handle { display: none; }
   #toc-resize-handle { display: none; }
+  .toc-column {
+    position: static;
+    max-height: none;
+    display: contents;
+  }
   #menu-toggle { display: flex; }
   #main {
     grid-template-columns: 1fr;
@@ -828,7 +872,7 @@ body {
     transform: translateX(100%);
     transition: transform 0.25s ease;
     box-shadow: none;
-    z-index: 30;
+    z-index: var(--z-panel-float);
     max-height: none;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border);

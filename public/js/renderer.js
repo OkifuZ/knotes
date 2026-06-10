@@ -1,48 +1,41 @@
+var ctx = { rootPrefix: '', linkHash: '', docPath: '' };
+
+marked.use({ gfm: true, breaks: false });
+
+marked.use({
+  renderer: {
+    link: function ({ href, title, text }) {
+      if (href && !/^https?:\/\//.test(href) && !href.startsWith('#') && !href.startsWith('/')) {
+        href = href.replace(/\.md$/, '');
+        href = '#' + ctx.linkHash + href;
+      }
+      var t = title ? ' title="' + escapeHtml(title) + '"' : '';
+      return '<a href="' + href + '"' + t + '>' + text + '</a>';
+    },
+    image: function ({ href, title, text }) {
+      if (href && !href.startsWith('http') && !href.startsWith('/') && !href.startsWith('data:')) {
+        var base = ctx.docPath ? ctx.docPath.substring(ctx.docPath.indexOf('/') + 1).replace(/[^/]+$/, '') : '';
+        href = ctx.rootPrefix + base + href;
+      }
+      var t = title ? ' title="' + escapeHtml(title) + '"' : '';
+      return '<img src="' + href + '" alt="' + text + '"' + t + '>';
+    },
+    code: function ({ text, lang }) {
+      if (lang === 'mermaid') return '<pre><code class="language-mermaid">' + escapeHtml(text) + '</code></pre>';
+      if (lang && hljs.getLanguage(lang)) {
+        return '<pre><code class="hljs language-' + lang + '">' + hljs.highlight(text, { language: lang }).value + '</code></pre>';
+      }
+      return '<pre><code>' + escapeHtml(text) + '</code></pre>';
+    }
+  }
+});
+
 function renderMarkdown(md, docPath, rootName, multiRoot) {
+  ctx.rootPrefix = rootName ? '/docs/' + rootName + '/' : '/docs/';
+  ctx.linkHash = multiRoot && rootName ? rootName + '/' : '';
+  ctx.docPath = docPath || '';
   md = preRenderMath(md);
-
-  const renderer = new marked.Renderer();
-  var rootPrefix = rootName ? '/docs/' + rootName + '/' : '/docs/';
-  var linkHash = multiRoot && rootName ? rootName + '/' : '';
-
-  renderer.link = function ({ href, title, text }) {
-    if (href && !/^https?:\/\//.test(href) && !href.startsWith('#') && !href.startsWith('/')) {
-      href = href.replace(/\.md$/, '');
-      href = '#' + linkHash + href;
-    }
-    const t = title ? ` title="${escapeAttr(title)}"` : '';
-    return `<a href="${href}"${t}>${text}</a>`;
-  };
-
-  renderer.image = function ({ href, title, text }) {
-    if (href && !href.startsWith('http') && !href.startsWith('/') && !href.startsWith('data:')) {
-      const base = docPath ? docPath.substring(docPath.indexOf('/') + 1).replace(/[^/]+$/, '') : '';
-      href = rootPrefix + base + href;
-    }
-    const t = title ? ` title="${escapeAttr(title)}"` : '';
-    return `<img src="${href}" alt="${text}"${t}>`;
-  };
-
-  renderer.code = function ({ text, lang }) {
-    if (lang === 'mermaid') {
-      return `<pre><code class="language-mermaid">${escapeHtml(text)}</code></pre>`;
-    }
-    const valid = lang && hljs.getLanguage(lang);
-    if (valid) {
-      const highlighted = hljs.highlight(text, { language: lang }).value;
-      return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
-    }
-    return `<pre><code>${escapeHtml(text)}</code></pre>`;
-  };
-
-  marked.setOptions({
-    renderer,
-    gfm: true,
-    breaks: false,
-  });
-
-  const html = marked.parse(md);
-  return `<div class="content">${html}</div>`;
+  return '<div class="content">' + marked.parse(md) + '</div>';
 }
 
 function preRenderMath(md) {
@@ -71,31 +64,34 @@ function preRenderMath(md) {
     catch (e) { return _; }
   });
 
-  for (var key in blocks) {
+  Object.keys(blocks).forEach(function (key) {
     md = md.replace(key, blocks[key]);
-  }
-
+  });
   return md;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderMermaidBlocks(root) {
   if (!root) return;
-  const blocks = root.querySelectorAll('pre code.language-mermaid');
-  const promises = [];
-  blocks.forEach((block, i) => {
-    const pre = block.parentElement;
-    const code = block.textContent;
-    const id = 'mermaid-' + Date.now() + '-' + i;
+  var blocks = root.querySelectorAll('pre code.language-mermaid');
+  var promises = [];
+  blocks.forEach(function (block, i) {
+    var pre = block.parentElement;
+    var code = block.textContent;
+    var id = 'mermaid-' + Date.now() + '-' + i;
     promises.push(
-      mermaid.render(id, code).then(({ svg }) => {
-        const div = document.createElement('div');
+      mermaid.render(id, code).then(function (result) {
+        var div = document.createElement('div');
         div.className = 'mermaid-container';
         div.dataset.mermaid = code;
         div.title = 'Click to enlarge';
-        div.innerHTML = svg;
+        div.innerHTML = result.svg;
         pre.replaceWith(div);
-      }).catch(err => {
-        const div = document.createElement('div');
+      }).catch(function (err) {
+        var div = document.createElement('div');
         div.className = 'mermaid-error';
         div.textContent = 'Mermaid: ' + err.message;
         pre.replaceWith(div);
@@ -106,23 +102,11 @@ function renderMermaidBlocks(root) {
 }
 
 function reRenderAllMermaid() {
-  document.querySelectorAll('.mermaid-container[data-mermaid]').forEach((container, i) => {
-    const code = container.dataset.mermaid;
-    const id = 'mermaid-rerender-' + Date.now() + '-' + i;
-    mermaid.render(id, code).then(({ svg }) => {
-      container.innerHTML = svg;
-    }).catch(_e => {});
+  document.querySelectorAll('.mermaid-container[data-mermaid]').forEach(function (container, i) {
+    var code = container.dataset.mermaid;
+    var id = 'mermaid-rerender-' + Date.now() + '-' + i;
+    mermaid.render(id, code).then(function (result) {
+      container.innerHTML = result.svg;
+    }).catch(function () {});
   });
-}
-
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escapeAttr(str) {
-  return str.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

@@ -1,19 +1,63 @@
 (function () {
-  const content = document.getElementById('content');
-  const sidebar = document.getElementById('sidebar');
-  const tocPanel = document.getElementById('toc-panel');
-  const menuToggle = document.getElementById('menu-toggle');
-  const tocToggle = document.getElementById('toc-toggle');
-  const overlay = document.getElementById('overlay');
-  const themeToggle = document.getElementById('theme-toggle');
-  const hljsTheme = document.getElementById('hljs-theme');
-  const resizeHandle = document.getElementById('resize-handle');
-  const app = document.getElementById('app');
+  var content = document.getElementById('content');
+  var sidebar = document.getElementById('sidebar');
+  var tocPanel = document.getElementById('toc-panel');
+  var menuToggle = document.getElementById('menu-toggle');
+  var tocToggle = document.getElementById('toc-toggle');
+  var overlay = document.getElementById('overlay');
+  var themeToggle = document.getElementById('theme-toggle');
+  var hljsTheme = document.getElementById('hljs-theme');
+  var resizeHandle = document.getElementById('resize-handle');
+  var app = document.getElementById('app');
 
   var rootNames = [];
   var currentRoot = '';
+  var rootData = null;
 
-  const savedTheme = localStorage.getItem('doc-reader-theme') || 'light';
+  var MERMAID_THEMES = {
+    dark: {
+      hljs: '/lib/@highlightjs/cdn-assets/styles/monokai-sublime.min.css',
+      variables: {
+        background: '#1e1f24',
+        primaryColor: '#25262c', primaryTextColor: '#c0c4cc', primaryBorderColor: '#3a3b40',
+        lineColor: '#5a5b62', secondaryColor: '#1e1f24', tertiaryColor: '#1e1f24',
+        mainBkg: '#25262c', nodeBorder: '#3a3b40', clusterBkg: '#1e1f24',
+        clusterBorder: '#3a3b40', titleColor: '#c0c4cc', edgeLabelBackground: '#1e1f24',
+        cScale0: '#4a3920', cScale1: '#2d3f49', cScale2: '#2f4438', cScale3: '#343640',
+        cScale4: '#6d3c3c', cScale5: '#4b4263', cScale6: '#40505a', cScale7: '#4a4f3b',
+        cScale8: '#574832', cScale9: '#394852', cScale10: '#3d4b42', cScale11: '#4d3f46',
+        cScaleInv0: '#d8c8a8', cScaleInv1: '#b6c8d2', cScaleInv2: '#b9cdbf', cScaleInv3: '#c0c4cc',
+        cScaleInv4: '#e0b5ae', cScaleInv5: '#c9bddc', cScaleInv6: '#bdccd2', cScaleInv7: '#ccd0b6',
+        cScaleInv8: '#dcc9ab', cScaleInv9: '#becbd4', cScaleInv10: '#c0d0c5', cScaleInv11: '#d2c0c8',
+        cScaleLabel0: '#f0eadf', cScaleLabel1: '#f0eadf', cScaleLabel2: '#f0eadf', cScaleLabel3: '#f0eadf',
+        cScaleLabel4: '#f0eadf', cScaleLabel5: '#f0eadf', cScaleLabel6: '#f0eadf', cScaleLabel7: '#f0eadf',
+        cScaleLabel8: '#f0eadf', cScaleLabel9: '#f0eadf', cScaleLabel10: '#f0eadf', cScaleLabel11: '#f0eadf',
+        git0: '#4a3920', gitBranchLabel0: '#f0eadf',
+      }
+    },
+    light: {
+      hljs: '/lib/@highlightjs/cdn-assets/styles/arta.min.css',
+      variables: {
+        background: '#f4f1ea',
+        primaryColor: '#eae5d9', primaryTextColor: '#3c3832', primaryBorderColor: '#c8c0b4',
+        lineColor: '#9a9388', secondaryColor: '#e2dccf', tertiaryColor: '#e2dccf',
+        mainBkg: '#eae5d9', nodeBorder: '#c8c0b4', clusterBkg: '#e2dccf',
+        clusterBorder: '#c8c0b4', titleColor: '#3c3832', edgeLabelBackground: '#f4f1ea',
+        cScale0: '#eadbc2', cScale1: '#d7e2e4', cScale2: '#dce6d6', cScale3: '#e6dfd2',
+        cScale4: '#ead6d2', cScale5: '#ddd8e6', cScale6: '#d6e1e5', cScale7: '#e3e5d4',
+        cScale8: '#e7d8c4', cScale9: '#dbe3e7', cScale10: '#dce7dc', cScale11: '#e5d8dd',
+        cScaleInv0: '#8b6b3e', cScaleInv1: '#4f6d78', cScaleInv2: '#5f7657', cScaleInv3: '#746b61',
+        cScaleInv4: '#8b5a54', cScaleInv5: '#6d6381', cScaleInv6: '#5d737d', cScaleInv7: '#74794d',
+        cScaleInv8: '#8a6c47', cScaleInv9: '#5f7280', cScaleInv10: '#647c67', cScaleInv11: '#806774',
+        cScaleLabel0: '#3c3832', cScaleLabel1: '#3c3832', cScaleLabel2: '#3c3832', cScaleLabel3: '#3c3832',
+        cScaleLabel4: '#3c3832', cScaleLabel5: '#3c3832', cScaleLabel6: '#3c3832', cScaleLabel7: '#3c3832',
+        cScaleLabel8: '#3c3832', cScaleLabel9: '#3c3832', cScaleLabel10: '#3c3832', cScaleLabel11: '#3c3832',
+        git0: '#eadbc2', gitBranchLabel0: '#3c3832',
+      }
+    }
+  };
+
+  var savedTheme = localStorage.getItem('doc-reader-theme') || 'light';
   applyTheme(savedTheme);
 
   window.addEventListener('hashchange', navigate);
@@ -21,44 +65,45 @@
 
   async function initRoots() {
     try {
-      const resp = await fetch('/api/structure');
-      const data = await resp.json();
-      rootNames = data.map(function (r) { return r.name; });
+      var resp = await fetch('/api/structure');
+      rootData = await resp.json();
+      rootNames = rootData.map(function (r) { return r.name; });
       if (rootNames.length === 1) currentRoot = rootNames[0];
-    } catch (_e) { rootNames = []; }
+    } catch (_e) { rootNames = []; rootData = []; }
   }
 
   themeToggle.addEventListener('click', function () {
-    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     applyTheme(next);
     localStorage.setItem('doc-reader-theme', next);
   });
 
-  document.querySelectorAll('.wbtn').forEach(function (btn) {
+  var wbtns = document.querySelectorAll('.wbtn');
+  wbtns.forEach(function (btn) {
     btn.addEventListener('click', function () {
-      const w = btn.dataset.width;
-      document.querySelectorAll('.wbtn').forEach(function (b) { b.classList.remove('active'); });
+      var w = btn.dataset.width;
+      wbtns.forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      app.style.setProperty('--content-w', w === '0' ? 'none' : w + 'px');
+      app.style.setProperty('--content-w', w === '0' ? '2000px' : w + 'px');
       localStorage.setItem('doc-reader-width', w);
     });
   });
   (function initWidth() {
-    const saved = localStorage.getItem('doc-reader-width') || '1100';
+    var saved = localStorage.getItem('doc-reader-width') || '1100';
     app.style.setProperty('--content-w', saved === '0' ? 'none' : saved + 'px');
-    document.querySelectorAll('.wbtn').forEach(function (b) {
+    wbtns.forEach(function (b) {
       b.classList.toggle('active', b.dataset.width === saved);
     });
   })();
 
   menuToggle.addEventListener('click', function () {
-    const open = sidebar.classList.toggle('open');
+    var open = sidebar.classList.toggle('open');
     overlay.classList.toggle('show', open);
     tocPanel.classList.remove('open');
   });
 
   tocToggle.addEventListener('click', function () {
-    const open = tocPanel.classList.toggle('open');
+    var open = tocPanel.classList.toggle('open');
     overlay.classList.toggle('show', open);
     sidebar.classList.remove('open');
   });
@@ -67,10 +112,8 @@
 
   initMermaidModal();
 
-  sidebar.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () {
-      if (window.innerWidth <= 860) closeAllPanels();
-    });
+  document.getElementById('sidebar-tree').addEventListener('click', function (e) {
+    if (e.target.tagName === 'A' && window.innerWidth <= 860) closeAllPanels();
   });
 
   function closeAllPanels() {
@@ -81,61 +124,14 @@
 
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
-    if (theme === 'dark') {
-      mermaid.initialize({
-        theme: 'base',
-        themeVariables: {
-          background: '#1b1c21',
-          primaryColor: '#2a2b30',
-          primaryTextColor: '#e4ddd0',
-          primaryBorderColor: '#3a3b40',
-          lineColor: '#8a8a92',
-          secondaryColor: '#222328',
-          tertiaryColor: '#1e1f24',
-          nodeBorder: '#3a3b40',
-          mainBkg: '#2a2b30',
-          edgeLabelBackground: '#1b1c21',
-          clusterBkg: '#222328',
-          clusterBorder: '#3a3b40',
-          titleColor: '#e4ddd0',
-          actorBorder: '#3a3b40',
-          actorBkg: '#2a2b30',
-          actorTextColor: '#e4ddd0',
-          signalColor: '#e4ddd0',
-          signalTextColor: '#e4ddd0',
-          labelTextColor: '#e4ddd0',
-          loopTextColor: '#e4ddd0',
-        },
-      });
-      hljsTheme.href = '/lib/@highlightjs/cdn-assets/styles/monokai-sublime.min.css';
-    } else {
-      mermaid.initialize({
-        theme: 'base',
-        themeVariables: {
-          background: '#f4f1ea',
-          primaryColor: '#ece6db',
-          primaryTextColor: '#3c3832',
-          primaryBorderColor: '#c4bbad',
-          lineColor: '#8a847c',
-          secondaryColor: '#e4dcd0',
-          tertiaryColor: '#f0ebe3',
-          nodeBorder: '#c4bbad',
-          mainBkg: '#ece6db',
-          edgeLabelBackground: '#f4f1ea',
-          clusterBkg: '#e4dcd0',
-          clusterBorder: '#c4bbad',
-          titleColor: '#3c3832',
-          actorBorder: '#c4bbad',
-          actorBkg: '#ece6db',
-          actorTextColor: '#3c3832',
-          signalColor: '#3c3832',
-          signalTextColor: '#3c3832',
-          labelTextColor: '#3c3832',
-          loopTextColor: '#3c3832',
-        },
-      });
-      hljsTheme.href = '/lib/@highlightjs/cdn-assets/styles/arta.min.css';
-    }
+    var t = MERMAID_THEMES[theme] || MERMAID_THEMES.light;
+    mermaid.initialize({
+      theme: 'base',
+      fontFamily: '"PingFang SC","Microsoft YaHei",sans-serif',
+      fontSize: 16,
+      themeVariables: t.variables
+    });
+    hljsTheme.href = t.hljs;
     reRenderAllMermaid();
   }
 
@@ -177,20 +173,28 @@
     document.getElementById('toc').innerHTML = '';
 
     try {
-      const resp = await fetch('/docs/' + docPath);
+      var resp = await fetch('/docs/' + docPath);
       if (!resp.ok) throw new Error('Not found');
-      const md = await resp.text();
+      var md = await resp.text();
       var html = renderMarkdown(md, docPath, currentRoot, rootNames.length > 1);
       content.innerHTML = html;
 
       await renderMermaidBlocks(content);
       generateTOC();
-      loadSidebar();
-    } catch (_err) {
+      if (rootData) {
+        loadSidebar(rootData);
+        rootData = null;
+      } else {
+        loadSidebar();
+      }
+    } catch (e) {
+      console.error(e);
+      var errMsg = e && e.message ? e.message : (e + '');
       if (parsed.sub === 'index') {
         var first = await findFirstDoc(parsed.root);
         if (first) {
-          location.hash = '#' + parsed.root + '/' + first.replace(/\.md$/, '');
+          var sub = first.replace(/\.md$/, '');
+          location.hash = rootNames.length > 1 ? '#' + parsed.root + '/' + sub : '#' + sub;
           return;
         }
       }
@@ -198,16 +202,21 @@
         + '<div class="empty-state">'
         + '<h2>Document not found</h2>'
         + '<p><code>' + docPath + '</code> could not be loaded.</p>'
-        + '<p style="margin-top:12px;font-size:13px;">Drop <code>.md</code> files to get started.</p>'
+        + '<p style="margin-top:12px;font-size:12px;color:var(--text-muted)">' + errMsg + '</p>'
         + '</div>';
-      loadSidebar();
+      if (rootData) {
+        loadSidebar(rootData);
+        rootData = null;
+      } else {
+        loadSidebar();
+      }
     }
   }
 
   async function findFirstDoc(rootName) {
     try {
-      const resp = await fetch('/api/structure');
-      const data = await resp.json();
+      var resp = await fetch('/api/structure');
+      var data = await resp.json();
       var entry = data.find(function (r) { return r.name === rootName; });
       if (!entry) return null;
       function firstFile(items) {
@@ -229,7 +238,7 @@
   initDragResize();
 
   function initDragResize() {
-    const tocHandle = document.getElementById('toc-resize-handle');
+    var tocHandle = document.getElementById('toc-resize-handle');
     var dragging = null;
 
     var configs = [
@@ -252,6 +261,7 @@
         var startW = cfg.target.classList.contains('collapsed') ? 0 : Math.max(currentW, 0);
         dragging = { cfg: cfg, startX: e.clientX, startW: startW };
         cfg.handle.classList.add('active');
+        app.classList.add('dragging');
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
         e.preventDefault();
@@ -272,6 +282,7 @@
       if (!dragging) return;
       var cfg = dragging.cfg;
       cfg.handle.classList.remove('active');
+      app.classList.remove('dragging');
       dragging = null;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -333,6 +344,7 @@
     viewport.addEventListener('click', function (e) {
       if (!e.target.closest('.mm-stage')) close();
     });
+
     closeBtn.addEventListener('click', close);
 
     viewport.addEventListener('wheel', function (e) {
