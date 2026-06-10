@@ -1,0 +1,180 @@
+[
+  {
+    "name": "docs",
+    "path": "docs",
+    "tree": [
+      {
+        "name": "index",
+        "title": "Index",
+        "type": "file",
+        "path": "index.md"
+      },
+      {
+        "name": "PGA",
+        "title": "Pga",
+        "type": "dir",
+        "children": [
+          {
+            "name": "notes",
+            "title": "Notes",
+            "type": "dir",
+            "children": [
+              {
+                "name": "05-mathematical-foundations",
+                "title": "05 Mathematical Foundations",
+                "type": "file",
+                "path": "PGA/notes/05-mathematical-foundations.md"
+              },
+              {
+                "name": "06-geometric-product",
+                "title": "06 Geometric Product",
+                "type": "file",
+                "path": "PGA/notes/06-geometric-product.md"
+              },
+              {
+                "name": "07-pga-euclidean-plane",
+                "title": "07 Pga Euclidean Plane",
+                "type": "file",
+                "path": "PGA/notes/07-pga-euclidean-plane.md"
+              },
+              {
+                "name": "08-pga-euclidean-space",
+                "title": "08 Pga Euclidean Space",
+                "type": "file",
+                "path": "PGA/notes/08-pga-euclidean-space.md"
+              },
+              {
+                "name": "09-automatic-differentiation",
+                "title": "09 Automatic Differentiation",
+                "type": "file",
+                "path": "PGA/notes/09-automatic-differentiation.md"
+              },
+              {
+                "name": "10-implementation-issues",
+                "title": "10 Implementation Issues",
+                "type": "file",
+                "path": "PGA/notes/10-implementation-issues.md"
+              },
+              {
+                "name": "11-comparison",
+                "title": "11 Comparison",
+                "type": "file",
+                "path": "PGA/notes/11-comparison.md"
+              },
+              {
+                "name": "glossary",
+                "title": "Glossary",
+                "type": "file",
+                "path": "PGA/notes/glossary.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "rtr4",
+        "title": "Rtr4",
+        "type": "dir",
+        "children": [
+          {
+            "name": "summary",
+            "title": "Summary",
+            "type": "dir",
+            "children": [
+              {
+                "name": "ch08-light-and-color",
+                "title": "Ch08 Light And Color",
+                "type": "file",
+                "path": "rtr4/summary/ch08-light-and-color.md"
+              },
+              {
+                "name": "ch09-physically-based-shading",
+                "title": "Ch09 Physically Based Shading",
+                "type": "file",
+                "path": "rtr4/summary/ch09-physically-based-shading.md"
+              },
+              {
+                "name": "ch10-local-illumination",
+                "title": "Ch10 Local Illumination",
+                "type": "file",
+                "path": "rtr4/summary/ch10-local-illumination.md"
+              },
+              {
+                "name": "ch11-global-illumination",
+                "title": "Ch11 Global Illumination",
+                "type": "file",
+                "path": "rtr4/summary/ch11-global-illumination.md"
+              },
+              {
+                "name": "ch12-image-space-effects",
+                "title": "Ch12 Image Space Effects",
+                "type": "file",
+                "path": "rtr4/summary/ch12-image-space-effects.md"
+              },
+              {
+                "name": "ch13-beyond-polygons",
+                "title": "Ch13 Beyond Polygons",
+                "type": "file",
+                "path": "rtr4/summary/ch13-beyond-polygons.md"
+              },
+              {
+                "name": "ch14-15-volume-npr",
+                "title": "Ch14 15 Volume Npr",
+                "type": "file",
+                "path": "rtr4/summary/ch14-15-volume-npr.md"
+              },
+              {
+                "name": "ch16-17-polygons-curves",
+                "title": "Ch16 17 Polygons Curves",
+                "type": "file",
+                "path": "rtr4/summary/ch16-17-polygons-curves.md"
+              },
+              {
+                "name": "ch18-pipeline-optimization",
+                "title": "Ch18 Pipeline Optimization",
+                "type": "file",
+                "path": "rtr4/summary/ch18-pipeline-optimization.md"
+              },
+              {
+                "name": "ch19-acceleration",
+                "title": "Ch19 Acceleration",
+                "type": "file",
+                "path": "rtr4/summary/ch19-acceleration.md"
+              },
+              {
+                "name": "ch20-efficient-shading",
+                "title": "Ch20 Efficient Shading",
+                "type": "file",
+                "path": "rtr4/summary/ch20-efficient-shading.md"
+              },
+              {
+                "name": "knowledge-thread",
+                "title": "Knowledge Thread",
+                "type": "file",
+                "path": "rtr4/summary/knowledge-thread.md"
+              },
+              {
+                "name": "knowledge-thread-ch12-20",
+                "title": "Knowledge Thread Ch12 20",
+                "type": "file",
+                "path": "rtr4/summary/knowledge-thread-ch12-20.md"
+              },
+              {
+                "name": "pbr-pipeline-ch8-11",
+                "title": "Pbr Pipeline Ch8 11",
+                "type": "file",
+                "path": "rtr4/summary/pbr-pipeline-ch8-11.md"
+              },
+              {
+                "name": "supplement-qa",
+                "title": "Supplement Qa",
+                "type": "file",
+                "path": "rtr4/summary/supplement-qa.md"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

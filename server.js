@@ -3,7 +3,6 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const { parse: parseUrl } = require('url');
 
 const app = express();
 
@@ -24,8 +23,9 @@ app.use('/lib', express.static(path.join(__dirname, 'node_modules')));
 
 // ---- docs ----
 app.use('/docs', (req, res) => {
-  const pathname = (parseUrl(req.url).pathname || '/').replace(/^\/+/, '');
-  const parts = pathname.split('/').map(decodeURIComponent);
+  var urlPath = (req.originalUrl || req.url || '').split('?')[0];
+  var pathname = urlPath.replace(/^\/docs\/?/, '').replace(/^\/+/, '');
+  var parts = pathname.split('/').map(decodeURIComponent);
   const first = parts[0];
 
   // --- match named root ---
@@ -135,7 +135,7 @@ function scanDir(baseDir, relDir) {
 }
 
 function slugToTitle(slug) {
-  return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return slug.replace(/[-_]/g, ' ').replace(/\b\w+/g, word => word[0].toUpperCase() + word.slice(1).toLowerCase());
 }
 
 // ---- CLI ----
@@ -190,56 +190,43 @@ function parseArgs(argv) {
   return { roots, removeNames, port, fresh, list };
 }
 
-async function tryMount(existingPort, roots) {
-  for (const r of roots) {
+function api(port, method, path, body, timeout) {
+  return new Promise((resolve, reject) => {
+    var headers = body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {};
+    var req = http.request({ hostname: '127.0.0.1', port: port, path: path, method: method, headers: headers }, function (res) {
+      var data = '';
+      res.on('data', function (c) { data += c; });
+      res.on('end', function () { resolve({ status: res.statusCode, data: data }); });
+    });
+    req.on('error', reject);
+    if (timeout) req.setTimeout(timeout, function () { req.destroy(); reject(new Error('timeout')); });
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+async function tryMount(port, roots) {
+  for (var i = 0; i < roots.length; i++) {
+    var r = roots[i];
     try {
-      const body = JSON.stringify({ name: r.name, absPath: r.absPath });
-      const resp = await new Promise((resolve, reject) => {
-        const req = http.request({
-          hostname: '127.0.0.1', port: existingPort, path: '/api/mount', method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-        }, res2 => {
-          let data = '';
-          res2.on('data', c => data += c);
-          res2.on('end', () => resolve({ status: res2.statusCode, data }));
-        });
-        req.on('error', reject);
-        req.write(body);
-        req.end();
-      });
-      if (resp.status === 200) {
-        console.log(`  Mounted "${r.name}" → http://localhost:${existingPort}`);
-      } else if (resp.status === 409) {
-        console.log(`  "${r.name}" already mounted`);
-      } else {
-        console.log(`  Failed to mount "${r.name}": ${resp.data}`);
-      }
+      var resp = await api(port, 'POST', '/api/mount', JSON.stringify({ name: r.name, absPath: r.absPath }));
+      if (resp.status === 200) console.log(`  Mounted "${r.name}" → http://localhost:${port}`);
+      else if (resp.status === 409) console.log(`  "${r.name}" already mounted`);
+      else console.log(`  Failed to mount "${r.name}": ${resp.data}`);
     } catch (e) {
-      console.error(`  Cannot reach http://localhost:${existingPort}: ${e.message}`);
+      console.error(`  Cannot reach http://localhost:${port}: ${e.message}`);
       process.exit(1);
     }
   }
 }
 
-async function tryRemove(existingPort, names) {
-  for (const name of names) {
+async function tryRemove(port, names) {
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
     try {
-      const resp = await new Promise((resolve, reject) => {
-        const req = http.request({
-          hostname: '127.0.0.1', port: existingPort, path: '/api/mount/' + encodeURIComponent(name), method: 'DELETE',
-        }, res2 => {
-          let data = '';
-          res2.on('data', c => data += c);
-          res2.on('end', () => resolve({ status: res2.statusCode, data }));
-        });
-        req.on('error', reject);
-        req.end();
-      });
-      if (resp.status === 200) {
-        console.log(`  Removed "${name}"`);
-      } else {
-        console.log(`  "${name}" not found`);
-      }
+      var resp = await api(port, 'DELETE', '/api/mount/' + encodeURIComponent(name));
+      if (resp.status === 200) console.log(`  Removed "${name}"`);
+      else console.log(`  "${name}" not found`);
     } catch (e) {
       console.error(`  Cannot reach server: ${e.message}`);
       process.exit(1);
@@ -247,42 +234,21 @@ async function tryRemove(existingPort, names) {
   }
 }
 
-async function tryList(existingPort) {
+async function tryList(port) {
   try {
-    const data = await new Promise((resolve, reject) => {
-      const req = http.get(`http://127.0.0.1:${existingPort}/api/health`, res2 => {
-        let data = '';
-        res2.on('data', c => data += c);
-        res2.on('end', () => resolve(data));
-      });
-      req.on('error', reject);
-      req.setTimeout(2000, () => { req.destroy(); reject(new Error('timeout')); });
-    });
-    const health = JSON.parse(data);
+    var health = JSON.parse(await api(port, 'GET', '/api/health', null, 2000).then(function (r) { return r.data; }));
     console.log(`Doc Reader on port ${health.port}:`);
     try {
-      const structData = await new Promise((resolve, reject) => {
-        const req = http.get(`http://127.0.0.1:${existingPort}/api/structure`, res2 => {
-          let d = '';
-          res2.on('data', c => d += c);
-          res2.on('end', () => resolve(d));
-        });
-        req.on('error', reject);
-        req.setTimeout(2000, () => { req.destroy(); reject(new Error('timeout')); });
-      });
-      const roots = JSON.parse(structData);
-      for (const r of roots) {
-        const count = r.tree ? r.tree.length : 0;
-        console.log(`  "${r.name}"  →  ${r.path}  (${count} entries)`);
+      var roots = JSON.parse(await api(port, 'GET', '/api/structure', null, 2000).then(function (r) { return r.data; }));
+      for (var i = 0; i < roots.length; i++) {
+        var r = roots[i];
+        console.log(`  "${r.name}"  →  ${r.path}  (${(r.tree || []).length} entries)`);
       }
     } catch (_e) {
-      // fallback: just show names
-      if (health.roots) {
-        for (const n of health.roots) console.log(`  ${n}`);
-      }
+      if (health.roots) for (var i2 = 0; i2 < health.roots.length; i2++) console.log(`  ${health.roots[i2]}`);
     }
   } catch (e) {
-    console.error(`No server running on port ${existingPort}`);
+    console.error(`No server running on port ${port}`);
     process.exit(1);
   }
 }
@@ -308,15 +274,7 @@ async function tryList(existingPort) {
   // --add (default): try to mount to existing server
   if (!fresh && parsedRoots.length > 0) {
     try {
-      await new Promise((resolve, reject) => {
-        const req = http.get(`http://127.0.0.1:${probePort}/api/health`, res2 => {
-          let data = '';
-          res2.on('data', c => data += c);
-          res2.on('end', () => resolve(data));
-        });
-        req.on('error', reject);
-        req.setTimeout(2000, () => { req.destroy(); reject(new Error('timeout')); });
-      });
+      await api(probePort, 'GET', '/api/health', null, 2000);
       console.log(`Server running on port ${probePort}. Mounting...`);
       await tryMount(probePort, parsedRoots);
       console.log('Refresh the browser to see changes.');
@@ -333,16 +291,14 @@ async function tryList(existingPort) {
     ROOTS.push({ name: 'docs', absPath: defaultPath });
   }
 
-  try {
-    app.listen(PORT, () => {
-      console.log(`Doc Reader :: http://localhost:${PORT}`);
-      for (const r of ROOTS) console.log(`  "${r.name}" → ${r.absPath}`);
-    });
-  } catch (e) {
+  app.listen(PORT, () => {
+    console.log(`Doc Reader :: http://localhost:${PORT}`);
+    for (const r of ROOTS) console.log(`  "${r.name}" → ${r.absPath}`);
+  }).on('error', function (e) {
     if (e.code === 'EADDRINUSE') {
       console.error(`Port ${PORT} is already in use. Use -p <port> or kill the existing server.`);
       process.exit(1);
     }
     throw e;
-  }
+  });
 })();
