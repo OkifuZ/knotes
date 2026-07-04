@@ -3,6 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const { scanDir } = require('./src/doc-tree');
 
 const app = express();
 
@@ -106,37 +107,6 @@ app.get('/api/structure', (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-function scanDir(baseDir, relDir) {
-  const fullPath = path.join(baseDir, relDir);
-  if (!fs.existsSync(fullPath)) return [];
-  const entries = fs.readdirSync(fullPath, { withFileTypes: true });
-  const dirs = [];
-  const files = [];
-
-  for (const entry of entries) {
-    if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue;
-    if (entry.isDirectory()) {
-      dirs.push({ name: entry.name, title: slugToTitle(entry.name), type: 'dir', children: scanDir(baseDir, path.join(relDir, entry.name)) });
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      const slug = entry.name.replace(/\.md$/, '');
-      const itemPath = relDir ? relDir.replace(/\\/g, '/') + '/' + entry.name : entry.name;
-      files.push({ name: slug, title: slugToTitle(slug), type: 'file', path: itemPath });
-    }
-  }
-
-  const index = files.find(f => f.name === 'index');
-  const rest = files.filter(f => f.name !== 'index');
-  rest.sort((a, b) => a.name.localeCompare(b.name));
-  dirs.sort((a, b) => a.name.localeCompare(b.name));
-
-  if (index) return [index, ...dirs, ...rest];
-  return [...dirs, ...rest];
-}
-
-function slugToTitle(slug) {
-  return slug.replace(/[-_]/g, ' ').replace(/\b\w+/g, word => word[0].toUpperCase() + word.slice(1).toLowerCase());
-}
 
 // ---- CLI ----
 function parseArgs(argv) {

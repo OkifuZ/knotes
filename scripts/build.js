@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var scanDir = require('../src/doc-tree').scanDir;
 
 var ROOT = path.join(__dirname, '..');
 var options = parseArgs(process.argv.slice(2));
@@ -49,42 +50,12 @@ function cpDir(src, dst) {
   }
 }
 
-// ----- scan docs/ -----
-function scanDir(base, rel) {
-  var full = path.join(base, rel);
-  var entries = fs.readdirSync(full, { withFileTypes: true });
-  var dirs = [];
-  var files = [];
-  for (var i = 0; i < entries.length; i++) {
-    var e = entries[i];
-    if (e.name.startsWith('_') || e.name.startsWith('.')) continue;
-    if (EXCLUDED_DOC_FILES[e.name]) continue;
-    if (e.isDirectory()) {
-      dirs.push({ name: e.name, title: slugToTitle(e.name), type: 'dir', children: scanDir(base, path.join(rel, e.name)) });
-    } else if (e.isFile() && e.name.endsWith('.md')) {
-      var slug = e.name.replace(/\.md$/, '');
-      var itemPath = rel ? rel.replace(/\\/g, '/') + '/' + e.name : e.name;
-      files.push({ name: slug, title: slugToTitle(slug), type: 'file', path: itemPath });
-    }
-  }
-  var index = files.find(function (f) { return f.name === 'index'; });
-  var rest = files.filter(function (f) { return f.name !== 'index'; });
-  rest.sort(function (a, b) { return a.name.localeCompare(b.name); });
-  dirs.sort(function (a, b) { return a.name.localeCompare(b.name); });
-  if (index) return [index].concat(dirs).concat(rest);
-  return dirs.concat(rest);
-}
-
-function slugToTitle(slug) {
-  return slug.replace(/[-_]/g, ' ').replace(/\b\w+/g, function (word) { return word[0].toUpperCase() + word.slice(1).toLowerCase(); });
-}
-
 // ----- main -----
 console.log('Build static...');
 console.log('  source: ' + SRC);
 
 // 1. structure.json
-var tree = scanDir(SRC, '');
+var tree = scanDir(SRC, '', { excludedNames: EXCLUDED_DOC_FILES });
 var structure = [{ name: ROOT_NAME, path: 'docs', tree: tree }];
 fs.writeFileSync(path.join(ROOT, 'public', 'structure.json'), JSON.stringify(structure, null, 2));
 console.log('  structure.json (' + tree.length + ' entries)');
