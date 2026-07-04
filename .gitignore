@@ -3,3 +3,5 @@
 docs/AGENTS.md
 node_modules
 tmp
+/scripts/local-sync-docs.py
+__pycache__/

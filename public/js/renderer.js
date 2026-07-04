@@ -34,13 +34,14 @@ function renderMarkdown(md, docPath, rootName, multiRoot) {
   ctx.rootPrefix = rootName ? '/docs/' + rootName + '/' : '/docs/';
   ctx.linkHash = multiRoot && rootName ? rootName + '/' : '';
   ctx.docPath = docPath || '';
-  md = preRenderMath(md);
-  return '<div class="content">' + marked.parse(md) + '</div>';
+  var math = preRenderMath(md);
+  return '<div class="content">' + restoreMath(marked.parse(math.md), math.html) + '</div>';
 }
 
 function preRenderMath(md) {
   var uid = (Math.random().toString(36) + Date.now().toString(36)).slice(2, 10);
   var blocks = {};
+  var mathHtml = {};
 
   md = md.replace(/```[\s\S]*?```/g, function (match) {
     var key = '\u0000FENCE' + uid + Object.keys(blocks).length + '\u0000';
@@ -54,20 +55,34 @@ function preRenderMath(md) {
   });
 
   md = md.replace(/\$\$([\s\S]*?)\$\$/g, function (_, tex) {
-    try { return '<span class="katex-block">' + katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }) + '</span>'; }
+    try { return stashMath('<span class="katex-block">' + katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }) + '</span>'); }
     catch (e) { return _; }
   });
 
   md = md.replace(/\$([^\s$](?:[^$]*[^\s$])?)\$/g, function (_, tex) {
     if (/^\d+(\.\d+)?$/.test(tex)) return _;
-    try { return katex.renderToString(tex, { displayMode: false, throwOnError: false }); }
+    try { return stashMath(katex.renderToString(tex, { displayMode: false, throwOnError: false })); }
     catch (e) { return _; }
   });
 
   Object.keys(blocks).forEach(function (key) {
     md = md.replace(key, blocks[key]);
   });
-  return md;
+
+  return { md: md, html: mathHtml };
+
+  function stashMath(html) {
+    var key = '\u0000MATH' + uid + Object.keys(mathHtml).length + '\u0000';
+    mathHtml[key] = html;
+    return key;
+  }
+}
+
+function restoreMath(html, mathHtml) {
+  Object.keys(mathHtml).forEach(function (key) {
+    html = html.replace(key, mathHtml[key]);
+  });
+  return html;
 }
 
 function escapeHtml(str) {

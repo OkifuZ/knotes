@@ -104,7 +104,7 @@ my-docs/
 ```
 
 - 文件夹 → 可折叠分组
-- 文件按字母排序，`index.md` 优先
+- 每层先显示 `index.md`，再显示其他 Markdown 文件，最后显示子文件夹
 - 文件名转标题：`getting-started` → "Getting Started"
 - `_` 或 `.` 开头的文件/文件夹会被忽略
 
