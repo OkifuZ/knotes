@@ -10,6 +10,36 @@
         "path": "index.md"
       },
       {
+        "name": "BCADMM-paper-notes",
+        "title": "Bcadmm Paper Notes",
+        "type": "file",
+        "path": "BCADMM-paper-notes.md"
+      },
+      {
+        "name": "localMesh-paper-notes",
+        "title": "Localmesh Paper Notes",
+        "type": "file",
+        "path": "localMesh-paper-notes.md"
+      },
+      {
+        "name": "penetrationfree-paper-notes",
+        "title": "Penetrationfree Paper Notes",
+        "type": "file",
+        "path": "penetrationfree-paper-notes.md"
+      },
+      {
+        "name": "sparseMesh-paper-notes",
+        "title": "Sparsemesh Paper Notes",
+        "type": "file",
+        "path": "sparseMesh-paper-notes.md"
+      },
+      {
+        "name": "yasps-paper-notes",
+        "title": "Yasps Paper Notes",
+        "type": "file",
+        "path": "yasps-paper-notes.md"
+      },
+      {
         "name": "PGA",
         "title": "Pga",
         "type": "dir",
